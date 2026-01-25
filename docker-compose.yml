@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  parser:
+    build: .
+    container_name: dictionary_parser
+    volumes:
+      # Монтируем директорию с входными файлами
+      - ./input:/app/input
+      # Монтируем директорию для выходных файлов
+      - ./output:/app/output
+      # Монтируем директорию для логов
+      - ./logs:/app/logs
+      # Монтируем код для разработки (опционально)
+      - ./parser.py:/app/parser.py
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
