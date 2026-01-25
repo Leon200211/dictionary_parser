@@ -1,0 +1,277 @@
+[
+    {
+        "writings": [
+            {
+                "word": "аароновский",
+                "value":"ааро́новский"
+            }
+        ],
+        "sections": [
+            {
+                "type": 1,
+                "content": "<strong>ааро́новский</strong>",
+                "sections": []
+            }
+        ]
+    },
+    {
+        "writings": [
+            {
+                "word": "ааленский",
+                "value":"аа́ленский"
+            }
+        ],
+        "sections": [
+            {
+                "type": 1,
+                "content": "<strong>аа́ленский</strong>",
+                "sections": []
+            },
+            {
+                "type": 0,
+                "content": " (<em>от</em> Аа́лен</span>, <em>геол.</em>)",
+                "sections": []
+            }
+        ]
+    },
+    {
+        "writings": [            
+            {
+                "word": "ам",
+                "value":"ам"
+            }
+        ],
+        "sections": [
+            {
+                "type": 1,
+                "content": "<strong>ам</strong>",
+                "sections": []
+            }
+        ]
+    },
+    {
+        "writings": [            
+            {
+                "word": "ам",
+                "value":"ам"
+            }
+        ],
+        "sections": [
+            {
+                "type": 1,
+                "content": "<strong>АМ</strong>",
+                "sections": []
+            },
+            {
+                "type": 0,
+                "content": " ",
+                "sections": []
+            },
+            {
+                "type": 3,
+                "content": "<em>сокр.</em>:амплитудная модуляция)",
+                "sections": []
+            }
+        ]
+    },
+    {
+        "writings": [            
+            {
+                "word": "автолизный",
+                "value":"авто́лизный"
+            }
+        ],
+        "sections": [
+            {
+                "type": 1,
+                "content": "<strong>авто́лизный</strong>",
+                "sections": []
+            },
+            {
+                "type": 0,
+                "content": " и ",
+                "sections": []
+            },
+            {
+                "type": 3,
+                "content": "<strong>ауто́лизный</strong>",
+                "sections": []
+            }
+        ]
+    },
+    {
+        "writings": [            
+            {
+                "word": "альфельд",
+                "value":"а́льфёльд"
+            }
+        ],
+        "sections": [
+            {
+                "type": 1,
+                "content": "<strong>а́льфёльд</strong>",
+                "sections": []
+            },
+            {
+                "type": 0,
+                "content": " ",
+                "sections": []
+            },
+            {
+                "type": 3,
+                "content": "(<em>геогр.</em>)",
+                "sections": []
+            },
+            {
+                "type": 0,
+                "content": " и ",
+                "sections": []
+            },
+            {
+                "type": 3,
+                "content": "<strong>А́льфёльд</strong>",
+                "sections": []
+            },
+            {
+                "type": 0,
+                "content": ", ",
+                "sections": []
+            },
+            {
+                "type": 3,
+                "content": "(<em>территория в Венгрии</em>)",
+                "sections": []
+            }
+        ]
+    },
+    {
+        "writings": [            
+            {
+                "word": "а",
+                "value":"а"
+            }
+        ],
+        "sections": [
+            {
+                "type": 1,
+                "content": "<strong>а<sup>1</sup></strong>",
+                "sections": []
+            },
+            {
+                "type": 0,
+                "content": ", ",
+                "sections": []
+            },
+            {
+                "type": 3,
+                "content": "<em>нескл</em>., <em>с</em>. (<em>название буквы</em>)",
+                "sections": []
+            }
+        ]
+    },
+    {
+        "writings": [            
+            {
+                "word": "а",
+                "value":"а́"
+            },                        
+            {
+                "word": "а-а-а",
+                "value":"а-а-а"
+            }
+        ],
+        "sections": [
+            {
+                "type": 1,
+                "content": "<strong>а́<sup>2</sup></strong>",
+                "sections": []
+            },
+            {
+                "type": 0,
+                "content": ", ",
+                "sections": []
+            },
+            {
+                "type": 1,
+                "content": "<strong>а-а-а</strong>",
+                "sections": []
+            },
+            {
+                "type": 0,
+                "content": ", ",
+                "sections": []
+            },
+            {
+                "type": 3,
+                "content": "<em>межд</em>.",
+                "sections": []
+            }
+        ]
+    },
+    {
+        "writings": [            
+            {
+                "word": "автолизированный",
+                "value":"автолизи́рованный"
+            },                        
+            {
+                "word": "аутолизированный",
+                "value":"аутолизи́рованный"
+            }
+        ],
+        "sections": [
+            {
+                "type": 1,
+                "content": "<strong>автолизи́рованный</strong>",
+                "sections": []
+            },
+            {
+                "type": 0,
+                "content": " и ",
+                "sections": []
+            },
+            {
+                "type": 1,
+                "content": "<strong>автолизи́рованный</strong>",
+                "sections": []
+            }
+        ]
+    },
+    {
+        "writings": [            
+            {
+                "word": "автолизировать",
+                "value":"автолизи́ровать"
+            },                        
+            {
+                "word": "автолизироваться",
+                "value":"автолизи́роваться"
+            },
+            {
+                "word": "аутолизировать",
+                "value":"аутолизи́ровать"
+            },                        
+            {
+                "word": "аутолизироваться",
+                "value":"аутолизи́роваться"
+            }
+        ],
+        "sections": [
+            {
+                "type": 1,
+                "content": "<strong>автолизи́ровать(ся)</strong>",
+                "sections": []
+            },
+            {
+                "type": 0,
+                "content": " и ",
+                "sections": []
+            },
+            {
+                "type": 1,
+                "content": "<strong>аутолизи́ровать(ся)</strong>",
+                "sections": []
+            }
+        ]
+    }
+]
