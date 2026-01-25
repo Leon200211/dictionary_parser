@@ -105,9 +105,9 @@
 
 ### Примеры работы парсера:
 
-Исходный файл: [section-1_example.docx](section-1_example.docx)
+Исходный файл: [section-1_example.docx](example/section-1_example.docx)
 
-Результат работы парсера: [section-1_example.json](section-1_example.json)
+Результат работы парсера: [section-1_example.json](example/section-1_example.json)
 
 1. Единственная **(1)**:
 
