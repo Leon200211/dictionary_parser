@@ -58,6 +58,9 @@ class DictionaryParser:
         self.errors_log = self.logs_dir / 'errors.log'
         self.links_log = self.logs_dir / 'links.log'
 
+        # Список для накопления блоков с ошибками
+        self.error_blocks = []
+
     def read_document(self, file_path: Path) -> str:
         """Читает Word документ и возвращает текст"""
         try:
@@ -84,8 +87,14 @@ class DictionaryParser:
         return articles
 
     def is_reference_article(self, article_text: str) -> bool:
-        """Проверяет, является ли статья ссылочной (содержит 'См.')"""
-        return bool(re.search(r'См\.?\s+', article_text, re.IGNORECASE))
+        """
+        Проверяет, является ли статья ссылочной (типа "СЛОВО. См. Другое_слово")
+        Ссылочная статья должна содержать 'См.' в начале после заголовка
+        """
+        # Убираем секцию 1 (заголовок) и проверяем, начинается ли оставшееся с "См."
+        # Паттерн: {1}ЗАГОЛОВОК{1}. См. ИЛИ {1}ЗАГОЛОВОК{1}, См. ИЛИ просто {1}ЗАГОЛОВОК{1} См.
+        pattern = r'\{1\}[^\}]+\{1\}\s*[,\.\s]*\s*См\.\s+'
+        return bool(re.match(pattern, article_text, re.IGNORECASE))
 
     def log_reference(self, article_text: str):
         """Логирует ссылочную статью"""
@@ -94,9 +103,37 @@ class DictionaryParser:
         logger.info("Найдена ссылочная статья")
 
     def log_error(self, error_type: str, article_text: str, details: str = ""):
-        """Логирует ошибку парсинга"""
+        """Логирует ошибку парсинга и добавляет в список блоков с ошибками"""
+        # Записываем в текстовый лог (старый способ)
         with open(self.errors_log, 'a', encoding='utf-8') as f:
             f.write(f"[{error_type}] {details}\n#{article_text}##\n\n")
+
+        # Добавляем в список блоков с ошибками для JSON
+        error_entry = {
+            'type': error_type,
+            'message': details
+        }
+
+        # Формируем полный текст блока с маркерами
+        full_block_text = f'#{article_text}##'
+
+        # Проверяем, есть ли уже этот блок в списке
+        existing_block = None
+        for block in self.error_blocks:
+            if block['block'] == full_block_text:
+                existing_block = block
+                break
+
+        if existing_block:
+            # Добавляем ошибку к существующему блоку
+            existing_block['errors'].append(error_entry)
+        else:
+            # Создаем новый блок с ошибкой
+            self.error_blocks.append({
+                'block': full_block_text,
+                'errors': [error_entry]
+            })
+
         logger.warning(f"Ошибка парсинга: {error_type}")
 
     def clean_word(self, word: str) -> str:
@@ -118,6 +155,7 @@ class DictionaryParser:
         """
         Извлекает варианты слов из текста секции 1
         Обрабатывает опциональные окончания типа слово(ся)
+        Согласно спецификации п.4: "Написание сохраняем как есть, но все буквы переводим в нижний регистр"
         """
         variants = []
 
@@ -137,7 +175,7 @@ class DictionaryParser:
             if word_without:
                 variants.append({
                     'word': word_without,
-                    'value': base
+                    'value': base.lower()  # Нижний регистр для value
                 })
 
             # Вариант с опциональным окончанием
@@ -145,7 +183,7 @@ class DictionaryParser:
             if word_with:
                 variants.append({
                     'word': word_with,
-                    'value': base + optional
+                    'value': (base + optional).lower()  # Нижний регистр для value
                 })
 
             # Удаляем обработанный текст
@@ -161,19 +199,63 @@ class DictionaryParser:
                 if cleaned:
                     variants.append({
                         'word': cleaned,
-                        'value': word_text
+                        'value': word_text.lower()  # Нижний регистр для value
                     })
 
         return variants
+
+    def normalize_html_tags(self, content: str) -> str:
+        """
+        Нормализует HTML теги согласно спецификации:
+        - <b> -> <strong>
+        - <i> -> <em>
+        - Закрывает незакрытые теги
+        - Открывает закрытые без открытия теги
+        """
+        # Заменяем <b> на <strong>
+        content = re.sub(r'<b(\s[^>]*)?>',  r'<strong\1>', content, flags=re.IGNORECASE)
+        content = re.sub(r'</b>', '</strong>', content, flags=re.IGNORECASE)
+
+        # Заменяем <i> на <em>
+        content = re.sub(r'<i(\s[^>]*)?>',  r'<em\1>', content, flags=re.IGNORECASE)
+        content = re.sub(r'</i>', '</em>', content, flags=re.IGNORECASE)
+
+        # Находим все открывающие и закрывающие теги
+        opening_tags = re.findall(r'<(strong|em)(\s[^>]*)?>', content, re.IGNORECASE)
+        closing_tags = re.findall(r'</(strong|em)>', content, re.IGNORECASE)
+
+        # Подсчитываем теги
+        tag_stack = []
+        for tag_name, attrs in opening_tags:
+            tag_stack.append(tag_name.lower())
+
+        for tag_name in closing_tags:
+            tag_name = tag_name.lower()
+            if tag_stack and tag_stack[-1] == tag_name:
+                tag_stack.pop()
+            else:
+                # Закрывающий тег без открывающего - добавляем открывающий в начало
+                content = f'<{tag_name}>{content}'
+
+        # Закрываем все незакрытые теги в конце
+        while tag_stack:
+            tag_name = tag_stack.pop()
+            content = f'{content}</{tag_name}>'
+
+        return content
 
     def format_content(self, content: str, section_type: int) -> str:
         """
         Форматирует контент с HTML тегами
         - Курсив (_текст_) -> <em>текст</em>
         - Для секции 1: контент -> <strong>контент</strong>
+        - Нормализует HTML теги (b->strong, i->em)
         """
         # Заменяем _текст_ на <em>текст</em>
         formatted = re.sub(r'_([^_]+)_', r'<em>\1</em>', content)
+
+        # Нормализуем HTML теги
+        formatted = self.normalize_html_tags(formatted)
 
         # Для секции 1 оборачиваем в <strong>
         if section_type == 1:
@@ -191,7 +273,7 @@ class DictionaryParser:
         for tag_type, (start_pattern, end_pattern) in self.TAG_PATTERNS.items():
             # Ищем все вхождения пары тегов
             pattern = f'{start_pattern}(.*?){end_pattern}'
-            for match in re.finditer(pattern, text):
+            for match in re.finditer(pattern, text, re.DOTALL):
                 start_pos = match.start()
                 end_pos = match.end()
                 content = match.group(1)
@@ -202,9 +284,34 @@ class DictionaryParser:
 
         return tags
 
+    def filter_top_level_tags(self, tags: List[Tuple[int, int, int, str]]) -> List[Tuple[int, int, int, str]]:
+        """
+        Фильтрует теги, оставляя только теги верхнего уровня (не вложенные)
+        """
+        if not tags:
+            return []
+
+        top_level = []
+        for i, (start, end, tag_type, content) in enumerate(tags):
+            # Проверяем, не находится ли этот тег внутри другого
+            is_nested = False
+            for j, (other_start, other_end, other_type, other_content) in enumerate(tags):
+                if i != j and other_start < start and end < other_end:
+                    # Этот тег находится внутри другого
+                    is_nested = True
+                    break
+
+            if not is_nested:
+                top_level.append((start, end, tag_type, content))
+
+        return top_level
+
     def parse_nested_sections(self, content: str) -> List[Dict]:
         """
         Парсит вложенные секции внутри контента
+        Разбивает контент на подсекции:
+        - Текст между вложенными секциями становится секцией типа 0
+        - Вложенные секции сохраняются со своим типом
         Возвращает список секций
         """
         nested_sections = []
@@ -215,13 +322,34 @@ class DictionaryParser:
         if not nested_tags:
             return []
 
+        last_pos = 0
+
         for start_pos, end_pos, tag_type, nested_content in nested_tags:
-            section = {
+            # Текст перед вложенной секцией (секция 0)
+            if start_pos > last_pos:
+                text_before = content[last_pos:start_pos]
+                if text_before.strip() or text_before:  # Сохраняем даже пробелы
+                    nested_sections.append({
+                        'type': 0,
+                        'content': self.format_content(text_before, 0)
+                    })
+
+            # Вложенная секция
+            nested_sections.append({
                 'type': tag_type,
-                'content': self.format_content(nested_content, tag_type),
-                'sections': []
-            }
-            nested_sections.append(section)
+                'content': self.format_content(nested_content, tag_type)
+            })
+
+            last_pos = end_pos
+
+        # Текст после последней вложенной секции (секция 0)
+        if last_pos < len(content):
+            text_after = content[last_pos:]
+            if text_after.strip() or text_after:  # Сохраняем даже пробелы
+                nested_sections.append({
+                    'type': 0,
+                    'content': self.format_content(text_after, 0)
+                })
 
         return nested_sections
 
@@ -229,19 +357,22 @@ class DictionaryParser:
         """
         Парсит секции статьи, сохраняя порядок
         Возвращает (sections, writings)
+
+        Важно: Секции с вложенными подсекциями имеют только поле 'sections',
+        секции без вложенных имеют только поле 'content'
         """
         sections = []
         writings = []
 
-        # Находим все теги верхнего уровня
-        tags = self.find_all_tags(article_text)
+        # Находим все теги и фильтруем, оставляя только верхнего уровня
+        all_tags = self.find_all_tags(article_text)
+        tags = self.filter_top_level_tags(all_tags)
 
         if not tags:
             # Если нет тегов, вся статья - секция 0
             sections.append({
                 'type': 0,
-                'content': self.format_content(article_text, 0),
-                'sections': []
+                'content': self.format_content(article_text, 0)
             })
             return sections, writings
 
@@ -252,33 +383,29 @@ class DictionaryParser:
             # Текст перед тегом (секция 0)
             if start_pos > last_pos:
                 text_between = article_text[last_pos:start_pos]
-                if text_between.strip():
+                if text_between.strip() or text_between:  # Сохраняем даже пробелы
                     sections.append({
                         'type': 0,
-                        'content': self.format_content(text_between, 0),
-                        'sections': []
+                        'content': self.format_content(text_between, 0)
                     })
 
             # Парсим вложенные секции
             nested_sections = self.parse_nested_sections(content)
 
-            # Если есть вложенные секции, удаляем их из контента основной секции
-            display_content = content
-            if nested_sections:
-                for nested_tag_start, nested_tag_end, nested_type, nested_content in self.find_all_tags(content):
-                    start_tag, end_tag = self.TAG_PATTERNS[nested_type]
-                    # Экранируем специальные символы для regex
-                    start_tag_escaped = re.escape(start_tag.replace('\\', ''))
-                    end_tag_escaped = re.escape(end_tag.replace('\\', ''))
-                    pattern = f'{start_tag_escaped}.*?{end_tag_escaped}'
-                    display_content = re.sub(pattern, '', display_content, count=1)
-
             # Создаем секцию
-            section = {
-                'type': tag_type,
-                'content': self.format_content(display_content if not nested_sections else content, tag_type),
-                'sections': nested_sections
-            }
+            if nested_sections:
+                # Секция с вложенными: только 'sections', БЕЗ 'content'
+                section = {
+                    'type': tag_type,
+                    'sections': nested_sections
+                }
+            else:
+                # Секция без вложенных: только 'content', БЕЗ 'sections'
+                section = {
+                    'type': tag_type,
+                    'content': self.format_content(content, tag_type)
+                }
+
             sections.append(section)
 
             # Для секции 1 извлекаем слова
@@ -291,11 +418,10 @@ class DictionaryParser:
         # Текст после последнего тега (секция 0)
         if last_pos < len(article_text):
             text_after = article_text[last_pos:]
-            if text_after.strip():
+            if text_after.strip() or text_after:  # Сохраняем даже пробелы
                 sections.append({
                     'type': 0,
-                    'content': self.format_content(text_after, 0),
-                    'sections': []
+                    'content': self.format_content(text_after, 0)
                 })
 
         # Убираем дубликаты из writings
@@ -338,6 +464,9 @@ class DictionaryParser:
         """Парсит весь документ"""
         logger.info(f"Начинаем парсинг файла: {file_path.name}")
 
+        # Очищаем список блоков с ошибками перед обработкой нового документа
+        self.error_blocks = []
+
         # Читаем документ
         text = self.read_document(file_path)
 
@@ -369,6 +498,20 @@ class DictionaryParser:
         except Exception as e:
             logger.error(f"Ошибка сохранения результатов: {e}")
 
+    def save_error_blocks(self, output_file: Path):
+        """Сохраняет блоки с ошибками в отдельный JSON файл"""
+        if not self.error_blocks:
+            logger.info("Нет блоков с ошибками для сохранения")
+            return
+
+        try:
+            with open(output_file, 'w', encoding='utf-8') as f:
+                json.dump(self.error_blocks, f, ensure_ascii=False, indent=2)
+            logger.info(f"Блоки с ошибками сохранены в: {output_file}")
+            logger.info(f"Всего блоков с ошибками: {len(self.error_blocks)}")
+        except Exception as e:
+            logger.error(f"Ошибка сохранения блоков с ошибками: {e}")
+
     def process_all_documents(self):
         """Обрабатывает все документы в input директории"""
         if not self.input_dir.exists():
@@ -398,6 +541,10 @@ class DictionaryParser:
             # Сохраняем результаты
             output_file = self.output_dir / f"{docx_file.stem}.json"
             self.save_results(results, output_file)
+
+            # Сохраняем блоки с ошибками
+            errors_output_file = self.output_dir / f"{docx_file.stem}_errors.json"
+            self.save_error_blocks(errors_output_file)
 
         logger.info(f"\n{'='*60}")
         logger.info("Обработка завершена!")
