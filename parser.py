@@ -313,11 +313,19 @@ class DictionaryParser:
         - Текст между вложенными секциями становится секцией типа 0
         - Вложенные секции сохраняются со своим типом
         Возвращает список секций
+
+        Важно: обрабатывает только один уровень вложенности (теги первого уровня)
         """
         nested_sections = []
 
         # Находим все вложенные теги
-        nested_tags = self.find_all_tags(content)
+        all_nested_tags = self.find_all_tags(content)
+
+        if not all_nested_tags:
+            return []
+
+        # Фильтруем, оставляя только теги первого уровня вложенности
+        nested_tags = self.filter_top_level_tags(all_nested_tags)
 
         if not nested_tags:
             return []
